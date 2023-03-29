@@ -60,6 +60,8 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+
+    ndkVersion '21.1.6352462'
 }
 
 flutter {

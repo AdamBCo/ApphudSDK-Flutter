@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:apphud/apphud.dart';
+import 'package:apphud/models/apphud_models/apphud_attribution_provider.dart';
 import 'package:apphud/models/apphud_models/apphud_debug_level.dart';
 import 'package:apphud/models/apphud_models/apphud_non_renewing_purchase.dart';
 import 'package:apphud/models/apphud_models/apphud_paywalls.dart';
@@ -10,6 +11,7 @@ import 'package:apphud_example/src/feature/common/app_secrets_base.dart';
 import 'package:apphud_example/src/feature/common/debug_print_mixin.dart';
 import 'package:apphud_example/src/feature/navigation/navigation_bloc.dart';
 import 'package:apphud_example/src/feature/navigation/navigation_event.dart';
+import 'package:appsflyer_sdk/appsflyer_sdk.dart';
 import 'package:bloc/bloc.dart';
 
 import 'initialization_event.dart';
@@ -63,9 +65,47 @@ class InitializationBloc extends Bloc<InitializationEvent, InitializationState>
       );
 
       _fetchPaywalls();
+      _initAppsFlyer().ignore();
     } catch (e) {
       yield InitializationState.startFail(e.toString());
     }
+  }
+
+  Future<void> _initAppsFlyer() async {
+    final AppsFlyerOptions appsFlyerOptions = AppsFlyerOptions(
+      afDevKey: 'AbwD69b6Foj9WT3huU9emh',
+      showDebug: true,
+    ); // Optional field
+
+    final AppsflyerSdk appsflyerSdk = AppsflyerSdk(appsFlyerOptions);
+
+    await appsflyerSdk.initSdk(
+      registerConversionDataCallback: true,
+      registerOnAppOpenAttributionCallback: true,
+      registerOnDeepLinkingCallback: true,
+    );
+
+    appsflyerSdk.onAppOpenAttribution(
+      (res) async {
+        printAsJson('AppsFlyer_onAppOpenAttribution', res);
+        //await Apphud.addAttribution(data: data, provider: Apphud);
+      },
+    );
+
+    appsflyerSdk.onInstallConversionData(
+      (res) async {
+        printAsJson('AppsFlyer_onInstallConversionData', res);
+        final String? uuid = await appsflyerSdk.getAppsFlyerUID();
+        if (uuid != null && uuid.isNotEmpty && res is Map) {
+          final data = Map<String, dynamic>.from(res);
+          await Apphud.addAttribution(
+            data: data,
+            provider: ApphudAttributionProvider.appsFlyer,
+            identifier: uuid,
+          );
+        }
+      },
+    );
   }
 
   Stream<InitializationState> _mapPaywallsFetchSuccess(

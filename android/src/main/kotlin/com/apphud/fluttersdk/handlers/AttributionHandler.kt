@@ -50,7 +50,7 @@ class AttributionHandler(override val routes: List<String>) : Handler {
                     ?: throw IllegalArgumentException("You need to pass correct attribution provider")
                 val data = args["data"] as? Map<String, Any>
                     ?: throw IllegalArgumentException("data is required argument")
-                val identifier = args["identifier"] as? String
+                val identifier = args["identifer"] as? String
 
                 callback(provider, data, identifier)
             } catch (e: IllegalArgumentException) {
